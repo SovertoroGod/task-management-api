@@ -2,8 +2,10 @@ import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/c
 import { TasksController } from './tasks.controller.js';
 import { TasksService } from './tasks.service.js';
 import { LoggerMiddleware } from './logger.middleware.js';
+import { PrismaModule } from '../prisma/prisma.module.js';
 
 @Module({
+  imports: [PrismaModule],
   controllers: [TasksController],
   providers: [TasksService]
 })

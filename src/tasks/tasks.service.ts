@@ -1,65 +1,66 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrimsaService } from '../prisma/prisma.service.js';
+import { CreateTaskDto } from './dto/create-task.dto.js';
+import { UpdateTaskDto } from './dto/update-task.dto.js';
 
 @Injectable()
 export class TasksService {
-    private tasks = [
-        {
-            "id": 1,
-            "title": "Learn NestJS",
-            "completed": false
-        },
-        {
-            "id": 3,
-            "title": "Build REST API",
-            "completed": true
-        }
-    ];
+    constructor(
+        private readonly prisma: PrimsaService
+    ) { }
 
-    findAll() {
-        return this.tasks;
+    async findAll() {
+        return this.prisma.task.findMany();
     }
 
-    findById(id: number) {
-        const task = this.tasks.find((t) => t.id === id);
+    async findById(id: number) {
+        const task = await this.prisma.task.findUnique({
+            where: {
+                id
+            }
+        });
+
+        if (!task) {
+            throw new NotFoundException(`Task with ${id} id not found`);
+        }
+
         return task;
     }
 
-    create(title: string) {
+    async create(dto: CreateTaskDto) {
         const newTask = {
-            id: this.tasks.length + 1,
-            title,
-            completed: false
+            title: dto.title,
+            completed: false,
+            description: dto.description
         }
 
-        this.tasks.push(newTask);
+        await this.prisma.task.create({
+            data: newTask
+        });
 
         return newTask;
     }
 
-    update(id:number,title?: string, completed?: boolean) {
-        const task = this.findById(id);
-        if (title && title !== undefined) {
-            task!.title = title;
-        };
+    async update(id: number, dto: UpdateTaskDto) {
+        const task = await this.findById(id);
 
-        if (completed !== undefined) {
-            task!.completed = completed;
-        }
+        const newTask = await this.prisma.task.update({
+            where: { id },
+            data: {
+                title: dto.title ? dto.title : task.title,
+                description: dto.description ? dto.description : task.description,
+                completed: dto.completed !== undefined ? dto.completed : task.completed
+            }
+        });
 
-        return task;
+        return newTask;
+
     }
 
-    delete(id: number) {
-        const taskId = this.tasks.findIndex((t) => t.id === id);
-
-        if (taskId === -1) {
-            throw new NotFoundException(`Task with ${id} not found`)
-        }
-
-        this.tasks.splice(taskId, 1);
-
+    async delete(id: number) {
+        await this.prisma.task.delete({ where: { id } });
         return {
-            message: "Task deleted successfully"
+            message: `${id} Task deleted successfully`
         }
     }
 }

@@ -19,13 +19,13 @@ export class TasksController {
     }
 
     @Post()
-    create(@Body('title') createTaskDto: CreateTaskDto) {
-        return this.taskService.create(createTaskDto.title);
+    create(@Body() createTaskDto: CreateTaskDto) {
+        return this.taskService.create(createTaskDto);
     }
 
     @Patch(":id")
     update(@Param("id", ParseIntPipe) id: number, @Body() updateTaskDto: UpdateTaskDto) {
-        return this.taskService.update(id, updateTaskDto.title, updateTaskDto.completed);
+        return this.taskService.update(id, updateTaskDto);
     }
 
     @Delete(":id")

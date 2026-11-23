@@ -19,5 +19,9 @@
     "strict": true,
     "strictPropertyInitialization": false,
     "types": ["vitest/globals", "node"]
-  }
+  },
+  "include": [
+    "src/**/*",
+    "generated/**/*"
+  ]
 }
