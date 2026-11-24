@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrimsaService } from '../prisma/prisma.service.js';
 import { CreateTaskDto } from './dto/create-task.dto.js';
 import { UpdateTaskDto } from './dto/update-task.dto.js';
+import { GetAllTaskDto } from './dto/getAll-task.dto.js';
 
 @Injectable()
 export class TasksService {
@@ -9,8 +10,62 @@ export class TasksService {
         private readonly prisma: PrimsaService
     ) { }
 
-    async findAll() {
-        return this.prisma.task.findMany();
+    async findAll(dto: GetAllTaskDto) {
+
+        const page = dto.page ?? 1;
+        const limit = dto.limit ?? 10;
+        const skip = (page - 1) * limit;
+
+        const startDate = dto.date ? new Date(dto.date) : undefined;
+        if (startDate) startDate.setHours(0, 0, 0, 0);
+
+        const endDate = dto.date ? new Date(dto.date) : undefined;
+        if (endDate) endDate.setHours(23, 59, 59, 999);
+
+        const where = {
+            ...(dto.completed !== undefined && {
+                completed: dto.completed
+            }),
+            ...(dto.search && {
+                title: {
+                    contains: dto.search,
+                    mode: "insensitive" as const,
+                }
+            }),
+            ...(dto.date && {
+                createdAt: {
+                    gte: startDate!,
+                    lte: endDate!
+                }
+            })
+        };
+
+        const orderBy =
+            dto.sortType === "title"
+                ? { title: (dto.sortOrder ?? 'desc') as 'asc' | 'desc' }
+                : { createdAt: (dto.sortOrder ?? 'desc') as 'asc' | 'desc' };
+
+        const [tasks, total] = await Promise.all([
+            this.prisma.task.findMany({
+                where,
+                orderBy,
+                skip,
+                take: limit
+            }),
+            this.prisma.task.count({
+                where
+            })
+        ]);
+
+        return {
+            data: tasks,
+            metadata: {
+                total,
+                page,
+                limit,
+                totalPage: Math.ceil(total / limit)
+            }
+        };
     }
 
     async findById(id: number) {
