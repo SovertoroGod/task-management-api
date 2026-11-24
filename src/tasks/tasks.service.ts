@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrimsaService } from '../prisma/prisma.service.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateTaskDto } from './dto/create-task.dto.js';
 import { UpdateTaskDto } from './dto/update-task.dto.js';
 import { GetAllTaskDto } from './dto/getAll-task.dto.js';
@@ -7,7 +7,7 @@ import { GetAllTaskDto } from './dto/getAll-task.dto.js';
 @Injectable()
 export class TasksService {
     constructor(
-        private readonly prisma: PrimsaService
+        private readonly prisma: PrismaService
     ) { }
 
     async findAll(dto: GetAllTaskDto) {
@@ -83,14 +83,14 @@ export class TasksService {
     }
 
     async create(dto: CreateTaskDto) {
-        const newTask = {
+        const data = {
             title: dto.title,
             completed: false,
             description: dto.description
         }
 
-        await this.prisma.task.create({
-            data: newTask
+        const newTask = await this.prisma.task.create({
+            data
         });
 
         return newTask;
@@ -113,6 +113,7 @@ export class TasksService {
     }
 
     async delete(id: number) {
+        await this.findById(id);
         await this.prisma.task.delete({ where: { id } });
         return {
             message: `${id} Task deleted successfully`
